@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>the one with the — movie memory search</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Courier+Prime:wght@400;700&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    min-height: 100%;
+    width: 100%;
+    overflow-x: hidden;
+    background: #ece5d6;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(90,80,60,0.05) 28px),
+      radial-gradient(circle at 80% 5%, rgba(0,0,0,0.03) 0%, transparent 30%);
+    color: #2c271e;
+    font-family: 'Lora', serif;
+  }
+
+  .desk {
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 50px 22px 90px;
+  }
+
+  .card, .result-card, .skeleton-card, header { max-width: 100%; }
+
+  header {
+    margin-bottom: 34px;
+    position: relative;
+  }
+
+  h1 {
+    font-family: 'Kalam', cursive;
+    font-weight: 700;
+    font-size: 33px;
+    color: #2c271e;
+    display: inline-block;
+    transform: rotate(-1.2deg);
+    position: relative;
+  }
+
+  h1 .underline {
+    position: absolute;
+    left: -2px;
+    right: -4px;
+    bottom: -6px;
+    height: 8px;
+  }
+
+  h1 .underline svg { width: 100%; height: 100%; }
+
+  .stamp {
+    display: inline-block;
+    border: 2px solid #a53c2c;
+    color: #a53c2c;
+    font-family: 'Courier Prime', monospace;
+    font-weight: 700;
+    font-size: 10.5px;
+    letter-spacing: 1px;
+    padding: 3px 9px;
+    border-radius: 3px;
+    transform: rotate(3deg);
+    margin-left: 10px;
+    position: relative;
+    top: -4px;
+    opacity: 0.85;
+  }
+
+  .subtitle {
+    font-family: 'Courier Prime', monospace;
+    font-size: 13px;
+    color: #766f5f;
+    margin-top: 14px;
+    max-width: 42ch;
+  }
+
+  .card {
+    background: #f6f1e4;
+    border: 1px solid rgba(44,39,30,0.12);
+    border-radius: 2px;
+    padding: 24px 22px 22px;
+    position: relative;
+    box-shadow: 2px 4px 0 rgba(44,39,30,0.06), 0 10px 22px rgba(44,39,30,0.08);
+    transform: rotate(0.3deg);
+  }
+
+  .tape {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-2deg);
+    width: 90px;
+    height: 26px;
+    background: rgba(220,208,175,0.75);
+    border: 1px solid rgba(44,39,30,0.08);
+    box-shadow: 0 2px 4px rgba(44,39,30,0.1);
+  }
+
+  label {
+    display: block;
+    font-family: 'Courier Prime', monospace;
+    font-size: 11.5px;
+    color: #8a8065;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 96px;
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px dashed rgba(44,39,30,0.25);
+    color: #2c271e;
+    font-family: 'Lora', serif;
+    font-size: 15.5px;
+    padding: 4px 2px 12px;
+    resize: vertical;
+    outline: none;
+    line-height: 1.55;
+  }
+
+  textarea:focus { border-bottom-color: #a53c2c; }
+  textarea::placeholder { color: #a8a08a; font-style: italic; }
+
+  .examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .example-chip {
+    background: transparent;
+    border: 1px dashed rgba(44,39,30,0.3);
+    color: #5c5645;
+    font-family: 'Courier Prime', monospace;
+    font-size: 11.5px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+  }
+
+  .example-chip:hover { border-color: #a53c2c; color: #a53c2c; }
+
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 6px;
+  }
+
+  .tag-chip {
+    background: transparent;
+    border: 1px solid rgba(44,39,30,0.2);
+    color: #5c5645;
+    font-family: 'Courier Prime', monospace;
+    font-size: 11.5px;
+    padding: 5px 11px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+
+  .tag-chip:hover { border-color: #a53c2c; }
+  .tag-chip.active {
+    background: #a53c2c;
+    border-color: #a53c2c;
+    color: #f6f1e4;
+  }
+
+  label.tags-label { margin-top: 20px; }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 24px; align-items: center; }
+
+  .go-btn {
+    background: #2c271e;
+    color: #f6f1e4;
+    border: none;
+    padding: 12px 22px;
+    font-family: 'Kalam', cursive;
+    font-weight: 700;
+    font-size: 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    transform: rotate(-0.5deg);
+    box-shadow: 2px 3px 0 rgba(44,39,30,0.25);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+
+  .go-btn:hover { transform: rotate(-0.5deg) translateY(-1px); box-shadow: 2px 5px 0 rgba(44,39,30,0.25); }
+  .go-btn:active { transform: translateY(1px); box-shadow: 1px 1px 0 rgba(44,39,30,0.25); }
+  .go-btn:disabled { opacity: 0.5; cursor: default; }
+
+  .reset-btn {
+    background: none;
+    border: none;
+    color: #8a8065;
+    font-family: 'Courier Prime', monospace;
+    font-size: 12.5px;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  .reset-btn:hover { color: #a53c2c; }
+
+  .kbd-hint {
+    font-family: 'Courier Prime', monospace;
+    font-size: 10.5px;
+    color: #a8a08a;
+    margin-top: 10px;
+  }
+
+  .kbd-hint kbd {
+    background: rgba(44,39,30,0.08);
+    border-radius: 3px;
+    padding: 1px 5px;
+  }
+
+  .loading {
+    display: none;
+    margin: 26px 4px;
+    font-family: 'Courier Prime', monospace;
+    color: #766f5f;
+    font-size: 13px;
+  }
+
+  .loading.active { display: flex; align-items: center; gap: 8px; }
+
+  .pencil {
+    display: inline-block;
+    animation: scribble 0.6s infinite ease-in-out;
+  }
+
+  @keyframes scribble {
+    0%, 100% { transform: rotate(-8deg); }
+    50% { transform: rotate(8deg); }
+  }
+
+  #results {
+    margin-top: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .skeleton-card {
+    background: #f6f1e4;
+    border: 1px solid rgba(44,39,30,0.1);
+    border-radius: 2px;
+    padding: 18px 20px;
+    box-shadow: 2px 3px 0 rgba(44,39,30,0.05);
+  }
+
+  .skeleton-line {
+    height: 11px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, rgba(44,39,30,0.06) 25%, rgba(44,39,30,0.12) 37%, rgba(44,39,30,0.06) 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease infinite;
+    margin-bottom: 8px;
+  }
+
+  .skeleton-line.title { width: 40%; height: 17px; }
+  .skeleton-line.meta { width: 26%; }
+  .skeleton-line.why { width: 88%; margin-top: 10px; }
+  .skeleton-line.why2 { width: 65%; }
+
+  @keyframes shimmer {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+  }
+
+  .result-card {
+    background: #f6f1e4;
+    border: 1px solid rgba(44,39,30,0.12);
+    border-radius: 2px;
+    padding: 18px 20px 16px;
+    box-shadow: 2px 4px 0 rgba(44,39,30,0.06), 0 8px 18px rgba(44,39,30,0.06);
+    animation: settle 0.3s ease-out;
+    position: relative;
+  }
+
+  .result-card:nth-child(odd) { transform: rotate(-0.6deg); }
+  .result-card:nth-child(even) { transform: rotate(0.5deg); }
+
+  @keyframes settle {
+    from { opacity: 0; transform: translateY(6px) rotate(0deg); }
+    to { opacity: 1; }
+  }
+
+  .pin {
+    position: absolute;
+    top: -7px;
+    left: 18px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #a53c2c;
+    box-shadow: 0 2px 3px rgba(0,0,0,0.25), inset -2px -2px 3px rgba(0,0,0,0.2);
+  }
+
+  .result-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-left: 14px;
+  }
+
+  .result-title {
+    font-family: 'Kalam', cursive;
+    font-weight: 700;
+    font-size: 21px;
+    color: #2c271e;
+  }
+
+  .confidence {
+    font-family: 'Courier Prime', monospace;
+    font-size: 10.5px;
+    padding: 3px 9px;
+    border-radius: 3px;
+    white-space: nowrap;
+    border: 1px solid;
+  }
+
+  .confidence.high { color: #4a6b3a; border-color: #4a6b3a; background: rgba(74,107,58,0.08); }
+  .confidence.medium { color: #8a6d1f; border-color: #8a6d1f; background: rgba(138,109,31,0.08); }
+  .confidence.low { color: #a53c2c; border-color: #a53c2c; background: rgba(165,60,44,0.08); }
+
+  .result-meta {
+    font-family: 'Courier Prime', monospace;
+    font-size: 12px;
+    color: #8a8065;
+    margin-top: 3px;
+    margin-left: 14px;
+  }
+
+  .result-why {
+    font-size: 14px;
+    color: #4a4638;
+    margin-top: 11px;
+    margin-left: 14px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(44,39,30,0.15);
+    line-height: 1.5;
+  }
+
+  .result-why strong { color: #a53c2c; font-weight: 600; }
+
+  .result-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+
+  .copy-btn {
+    background: none;
+    border: none;
+    color: #a8a08a;
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  .copy-btn:hover { color: #a53c2c; }
+  .copy-btn.copied { color: #4a6b3a; }
+
+  .refine-box {
+    display: none;
+    margin-top: 6px;
+    padding: 16px 18px;
+    border: 1px dashed rgba(44,39,30,0.25);
+    border-radius: 2px;
+  }
+
+  .refine-box.active { display: block; }
+
+  .refine-box label { margin-bottom: 8px; }
+
+  .refine-row { display: flex; gap: 8px; }
+
+  .refine-row input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px dashed rgba(44,39,30,0.3);
+    color: #2c271e;
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 14px;
+    padding: 6px 2px;
+    outline: none;
+  }
+
+  .refine-row input:focus { border-bottom-color: #a53c2c; }
+
+  .refine-row button {
+    background: none;
+    border: 1px solid #2c271e;
+    color: #2c271e;
+    font-family: 'Courier Prime', monospace;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 0 14px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  .refine-row button:hover { background: #2c271e; color: #f6f1e4; }
+  .refine-row button:disabled { opacity: 0.5; cursor: default; }
+
+  .empty-note, .error-note {
+    font-family: 'Courier Prime', monospace;
+    font-size: 13px;
+    padding: 4px;
+  }
+
+  .empty-note { color: #8a8065; font-style: italic; }
+  .error-note { color: #a53c2c; }
+  .error-note .detail { display: block; font-size: 11px; color: #a8a08a; margin-top: 4px; }
+
+  footer {
+    margin-top: 44px;
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    color: #a8a08a;
+    text-align: center;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="desk">
+  <header>
+    <h1>the one with the...
+      <span class="underline">
+        <svg viewBox="0 0 300 10" preserveAspectRatio="none"><path d="M2,6 Q40,2 80,6 T160,6 T240,6 T298,6" stroke="#a53c2c" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+      </span>
+    </h1>
+    <span class="stamp">NO SPOILERS · NO PICS</span>
+    <div class="subtitle">You know the scene. You just don't know the title. Describe it however you remember it — I'll do the digging.</div>
+  </header>
+
+  <div class="card">
+    <div class="tape"></div>
+    <label>what do you remember</label>
+    <textarea id="description" placeholder="blue-haired girl, sci-fi, fights some kind of robot in the rain, maybe anime?"></textarea>
+
+    <div class="examples" id="exampleRow">
+      <button class="example-chip" data-fill="blue-haired girl, sci-fi, she fights a robot in the rain">blue hair sci-fi</button>
+      <button class="example-chip" data-fill="kid finds a portal in his closet, there's a faceless creature that steals kids' laughter">closet portal horror</button>
+      <button class="example-chip" data-fill="two people fall in love but one of them can't remember the other one the next day">memory loss romance</button>
+    </div>
+
+    <label class="tags-label">narrow it down (optional)</label>
+    <div class="tag-row" id="tagRow">
+      <button class="tag-chip" data-tag="90s">90s</button>
+      <button class="tag-chip" data-tag="2000s">2000s</button>
+      <button class="tag-chip" data-tag="2010s">2010s</button>
+      <button class="tag-chip" data-tag="animated">animated</button>
+      <button class="tag-chip" data-tag="anime">anime</button>
+      <button class="tag-chip" data-tag="horror">horror</button>
+      <button class="tag-chip" data-tag="sci-fi">sci-fi</button>
+      <button class="tag-chip" data-tag="romance">romance</button>
+      <button class="tag-chip" data-tag="foreign film">foreign film</button>
+    </div>
+
+    <div class="btn-row">
+      <button class="go-btn" id="goBtn" onclick="solveCase()">find it</button>
+      <button class="reset-btn" id="resetBtn" onclick="resetCase()" style="display:none;">start over</button>
+    </div>
+    <div class="kbd-hint"><kbd>Enter</kbd> to search · <kbd>Shift+Enter</kbd> for a new line</div>
+  </div>
+
+  <div class="loading" id="loading">
+    <span class="pencil">✎</span> digging through the archive...
+  </div>
+
+  <div id="results"></div>
+
+  <div class="refine-box" id="refineBox">
+    <label>none of these it? add one more detail</label>
+    <div class="refine-row">
+      <input type="text" id="refineInput" placeholder="it was definitely animated, not live action" />
+      <button id="refineBtn" onclick="refineCase()">refine</button>
+    </div>
+  </div>
+
+  <footer>built for people who describe movies as "the one with the guy, you know, from that thing"<br>no posters, no stills — just memory and reasoning.</footer>
+</div>
+
+<script>
+const activeTags = new Set();
+
+document.querySelectorAll('.tag-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    chip.classList.toggle('active');
+    const tag = chip.dataset.tag;
+    if (activeTags.has(tag)) activeTags.delete(tag); else activeTags.add(tag);
+  });
+});
+
+document.querySelectorAll('.example-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.getElementById('description').value = chip.dataset.fill;
+  });
+});
+
+const SYSTEM_PROMPT = `You are a film-identification expert. People give you vague, fuzzy, half-remembered descriptions of movies — a visual detail, a scene, a vibe, a genre guess — and your job is to propose real films that plausibly match.
+
+ALWAYS return at least 2-3 candidates if there is ANY plausible genre/visual/plot signal in the description, even a single detail like a hair color plus a genre. Only return zero candidates if the input is truly empty of any usable signal (e.g. random keyboard mashing). Being vague is normal and expected — that's the whole point of this tool. Do your best guess work like a real film buff would, considering popular and cult films, anime, and international cinema, not just the most obvious blockbuster.
+
+Return ONLY a raw JSON array (no markdown fences, no preamble, no text outside the JSON). 2-4 candidates, ranked most-to-least likely. Each object:
+{
+  "title": "Movie Title",
+  "year": "YYYY",
+  "director": "Director Name",
+  "confidence": "high" | "medium" | "low",
+  "why": "1-2 sentences, in your own words, tying specific details from the description to this film."
+}
+
+Never invent a film that doesn't exist. If a detail could match several films, list the most likely ones separately rather than refusing to answer.`;
+
+let conversationHistory = [];
+
+function showSkeleton() {
+  document.getElementById('results').innerHTML = `
+    <div class="skeleton-card">
+      <div class="skeleton-line title"></div>
+      <div class="skeleton-line meta"></div>
+      <div class="skeleton-line why"></div>
+      <div class="skeleton-line why2"></div>
+    </div>
+    <div class="skeleton-card">
+      <div class="skeleton-line title"></div>
+      <div class="skeleton-line meta"></div>
+      <div class="skeleton-line why"></div>
+    </div>
+  `;
+}
+
+async function callClaude(userMessage) {
+  conversationHistory.push({ role: 'user', content: userMessage });
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1000,
+      system: SYSTEM_PROMPT,
+      messages: conversationHistory
+    })
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`API returned ${response.status}: ${errText.slice(0, 200)}`);
+  }
+
+  const data = await response.json();
+  const textBlock = data.content?.find(b => b.type === 'text');
+
+  if (!textBlock) {
+    throw new Error('No text content in API response: ' + JSON.stringify(data).slice(0, 200));
+  }
+
+  conversationHistory.push({ role: 'assistant', content: textBlock.text });
+
+  let raw = textBlock.text.trim().replace(/```json|```/g, '').trim();
+  const firstBracket = raw.indexOf('[');
+  const lastBracket = raw.lastIndexOf(']');
+  if (firstBracket !== -1 && lastBracket !== -1) {
+    raw = raw.slice(firstBracket, lastBracket + 1);
+  }
+  return JSON.parse(raw);
+}
+
+async function solveCase() {
+  const description = document.getElementById('description').value.trim();
+  const resultsEl = document.getElementById('results');
+  const loadingEl = document.getElementById('loading');
+  const goBtn = document.getElementById('goBtn');
+
+  if (!description) {
+    resultsEl.innerHTML = '<div class="empty-note">type at least one detail to search on.</div>';
+    return;
+  }
+
+  conversationHistory = [];
+  showSkeleton();
+  loadingEl.classList.add('active');
+  goBtn.disabled = true;
+  document.getElementById('refineBox').classList.remove('active');
+
+  const tagText = activeTags.size ? `\nAdditional clues/tags: ${Array.from(activeTags).join(', ')}` : '';
+  const userMessage = `Description: ${description}${tagText}`;
+
+  try {
+    const candidates = await callClaude(userMessage);
+    renderResults(candidates);
+    document.getElementById('resetBtn').style.display = 'inline-block';
+    document.getElementById('refineBox').classList.add('active');
+  } catch (err) {
+    resultsEl.innerHTML = `<div class="error-note">something went wrong searching.<span class="detail">${escapeHtml(err.message)}</span></div>`;
+    console.error(err);
+  } finally {
+    loadingEl.classList.remove('active');
+    goBtn.disabled = false;
+  }
+}
+
+async function refineCase() {
+  const refineInput = document.getElementById('refineInput');
+  const detail = refineInput.value.trim();
+  const refineBtn = document.getElementById('refineBtn');
+  const resultsEl = document.getElementById('results');
+
+  if (!detail || conversationHistory.length === 0) return;
+
+  refineBtn.disabled = true;
+  showSkeleton();
+
+  try {
+    const candidates = await callClaude(
+      `None of those were quite right. Here's another detail: ${detail}\nGive me new candidates — you can drop the ones you already suggested unless they still fit.`
+    );
+    renderResults(candidates);
+    refineInput.value = '';
+  } catch (err) {
+    resultsEl.innerHTML = `<div class="error-note">something went wrong refining the search.<span class="detail">${escapeHtml(err.message)}</span></div>`;
+    console.error(err);
+  } finally {
+    refineBtn.disabled = false;
+  }
+}
+
+function resetCase() {
+  conversationHistory = [];
+  document.getElementById('description').value = '';
+  document.getElementById('refineInput').value = '';
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('refineBox').classList.remove('active');
+  document.getElementById('resetBtn').style.display = 'none';
+  activeTags.clear();
+  document.querySelectorAll('.tag-chip.active').forEach(c => c.classList.remove('active'));
+  document.getElementById('description').focus();
+}
+
+document.getElementById('description').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    solveCase();
+  }
+});
+
+document.getElementById('refineInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    refineCase();
+  }
+});
+
+function renderResults(candidates) {
+  const resultsEl = document.getElementById('results');
+
+  if (!candidates || !candidates.length) {
+    resultsEl.innerHTML = '<div class="empty-note">no leads yet — try adding a genre, era, or one more visual detail.</div>';
+    return;
+  }
+
+  resultsEl.innerHTML = candidates.map((c) => {
+    const conf = (c.confidence || 'low').toLowerCase();
+    const confLabel = conf === 'high' ? 'pretty sure' : conf === 'medium' ? 'maybe' : 'long shot';
+    const yearMeta = c.year ? ` · ${escapeHtml(c.year)}` : '';
+    const dirMeta = c.director ? ` · dir. ${escapeHtml(c.director)}` : '';
+    const titleAttr = escapeHtml(c.title || '');
+    return `
+      <div class="result-card">
+        <div class="pin"></div>
+        <div class="result-top">
+          <span class="result-title">${escapeHtml(c.title || 'Unknown')}</span>
+          <span class="confidence ${conf}">${confLabel}</span>
+        </div>
+        <div class="result-meta">${yearMeta}${dirMeta}</div>
+        <div class="result-why"><strong>why:</strong> ${escapeHtml(c.why || '')}</div>
+        <div class="result-actions">
+          <button class="copy-btn" onclick="copyTitle(this, '${titleAttr.replace(/'/g, "\\'")}')">copy title</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function copyTitle(btn, title) {
+  navigator.clipboard.writeText(title).then(() => {
+    const original = btn.textContent;
+    btn.textContent = 'copied ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+</script>
+
+</body>
+</html>
